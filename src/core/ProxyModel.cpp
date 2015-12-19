@@ -75,6 +75,11 @@ QModelIndex ProxyModel::index(int row, int column, const QModelIndex &parent) co
 	return mapFromSource(sourceIndex);
 }
 
+Qt::ItemFlags ProxyModel::flags(const QModelIndex &index) const
+{
+	return QIdentityProxyModel::flags((index.column() == 0) ? index : index.sibling(index.row(), 0));
+}
+
 int ProxyModel::columnCount(const QModelIndex &parent) const
 {
 	return m_mapping.count();

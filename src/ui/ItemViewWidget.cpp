@@ -104,7 +104,6 @@ int ItemViewWidget::m_treeIndentation = 0;
 
 ItemViewWidget::ItemViewWidget(QWidget *parent) : QTreeView(parent),
 	m_model(NULL),
-	m_proxyModel(NULL),
 	m_headerWidget(new HeaderViewWidget(Qt::Horizontal, this)),
 	m_viewMode(ListViewMode),
 	m_sortOrder(Qt::AscendingOrder),
@@ -469,19 +468,14 @@ void ItemViewWidget::setData(const QModelIndex &index, const QVariant &value, in
 
 void ItemViewWidget::setModel(QAbstractItemModel *model)
 {
-	if (model)
-	{
-		m_proxyModel = new QSortFilterProxyModel(this);
-		m_proxyModel->setSourceModel(model);
-
-		QTreeView::setModel(m_proxyModel);
-	}
-	else
+	if (!model)
 	{
 		QTreeView::setModel(NULL);
 
 		return;
 	}
+
+	QTreeView::setModel(model);
 
 	if (!model->parent())
 	{

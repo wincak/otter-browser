@@ -23,7 +23,6 @@
 #define OTTER_ITEMVIEWWIDGET_H
 
 #include <QtGui/QContextMenuEvent>
-#include <QtGui/QSortFilterProxyModel>
 #include <QtGui/QStandardItemModel>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QTreeView>
@@ -113,7 +112,6 @@ protected slots:
 
 private:
 	QStandardItemModel *m_model;
-	QSortFilterProxyModel *m_proxyModel;
 	HeaderViewWidget *m_headerWidget;
 	QString m_filterString;
 	QModelIndex m_currentIndex;

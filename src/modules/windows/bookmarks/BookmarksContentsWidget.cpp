@@ -31,6 +31,7 @@
 #include <QtCore/QTimer>
 #include <QtGui/QClipboard>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QSortFilterProxyModel>
 #include <QtWidgets/QDesktopWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolTip>
@@ -54,11 +55,14 @@ BookmarksContentsWidget::BookmarksContentsWidget(Window *window) : ContentsWidge
 	QList<QPair<QString, int> > rolesMapping;
 	rolesMapping << qMakePair(tr("Title"), BookmarksModel::TitleRole) << qMakePair(tr("Address"), BookmarksModel::UrlRole) << qMakePair(tr("Description"), BookmarksModel::DescriptionRole) << qMakePair(tr("Keyword"), BookmarksModel::KeywordRole) << qMakePair(tr("Added"), BookmarksModel::TimeAddedRole) << qMakePair(tr("Modified"), BookmarksModel::TimeModifiedRole) << qMakePair(tr("Visited"), BookmarksModel::TimeVisitedRole) << qMakePair(tr("Visits"), BookmarksModel::VisitsRole);
 
-	ProxyModel *model = new ProxyModel(BookmarksManager::getModel(), rolesMapping, this);
+	ProxyModel *proxyModel = new ProxyModel(BookmarksManager::getModel(), rolesMapping, this);
+//	QSortFilterProxyModel *sortModel = new QSortFilterProxyModel(this);
+//	sortModel->setSourceModel(proxyModel);
+//	sortModel->setDynamicSortFilter(true);
 
 	m_ui->addButton->setMenu(addMenu);
 	m_ui->bookmarksViewWidget->setViewMode(ItemViewWidget::TreeViewMode);
-	m_ui->bookmarksViewWidget->setModel(model);
+	m_ui->bookmarksViewWidget->setModel(proxyModel);
 	m_ui->bookmarksViewWidget->setItemDelegate(new ItemDelegate(this));
 	m_ui->bookmarksViewWidget->setExpanded(m_ui->bookmarksViewWidget->model()->index(0, 0), true);
 	m_ui->bookmarksViewWidget->setFilterRoles(filterRoles);
