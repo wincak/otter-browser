@@ -19,6 +19,7 @@
 
 #include "BookmarksContentsWidget.h"
 #include "../../../core/ActionsManager.h"
+#include "../../../core/ProxyModel.h"
 #include "../../../core/SettingsManager.h"
 #include "../../../core/Utils.h"
 #include "../../../ui/BookmarkPropertiesDialog.h"
@@ -50,11 +51,16 @@ BookmarksContentsWidget::BookmarksContentsWidget(Window *window) : ContentsWidge
 	QSet<int> filterRoles;
 	filterRoles << BookmarksModel::UrlRole << BookmarksModel::TitleRole << BookmarksModel::DescriptionRole << BookmarksModel::KeywordRole;
 
+	QList<QPair<QString, int> > rolesMapping;
+	rolesMapping << qMakePair(tr("Title"), BookmarksModel::TitleRole) << qMakePair(tr("Address"), BookmarksModel::UrlRole) << qMakePair(tr("Description"), BookmarksModel::DescriptionRole) << qMakePair(tr("Keyword"), BookmarksModel::KeywordRole) << qMakePair(tr("Added"), BookmarksModel::TimeAddedRole) << qMakePair(tr("Modified"), BookmarksModel::TimeModifiedRole) << qMakePair(tr("Visited"), BookmarksModel::TimeVisitedRole) << qMakePair(tr("Visits"), BookmarksModel::VisitsRole);
+
+	ProxyModel *model = new ProxyModel(BookmarksManager::getModel(), rolesMapping, this);
+
 	m_ui->addButton->setMenu(addMenu);
 	m_ui->bookmarksViewWidget->setViewMode(ItemViewWidget::TreeViewMode);
-	m_ui->bookmarksViewWidget->setModel(BookmarksManager::getModel());
+	m_ui->bookmarksViewWidget->setModel(model);
 	m_ui->bookmarksViewWidget->setItemDelegate(new ItemDelegate(this));
-	m_ui->bookmarksViewWidget->setExpanded(BookmarksManager::getModel()->getRootItem()->index(), true);
+	m_ui->bookmarksViewWidget->setExpanded(m_ui->bookmarksViewWidget->model()->index(0, 0), true);
 	m_ui->bookmarksViewWidget->setFilterRoles(filterRoles);
 	m_ui->bookmarksViewWidget->installEventFilter(this);
 	m_ui->bookmarksViewWidget->viewport()->installEventFilter(this);
@@ -117,12 +123,12 @@ void BookmarksContentsWidget::addSeparator()
 
 void BookmarksContentsWidget::removeBookmark()
 {
-	BookmarksManager::getModel()->trashBookmark(BookmarksManager::getModel()->bookmarkFromIndex(m_ui->bookmarksViewWidget->currentIndex()));
+	BookmarksManager::getModel()->trashBookmark(BookmarksManager::getModel()->getBookmark(m_ui->bookmarksViewWidget->currentIndex().data(BookmarksModel::IdentifierRole).toULongLong()));
 }
 
 void BookmarksContentsWidget::restoreBookmark()
 {
-	BookmarksManager::getModel()->restoreBookmark(BookmarksManager::getModel()->bookmarkFromIndex(m_ui->bookmarksViewWidget->currentIndex()));
+	BookmarksManager::getModel()->restoreBookmark(BookmarksManager::getModel()->getBookmark(m_ui->bookmarksViewWidget->currentIndex().data(BookmarksModel::IdentifierRole).toULongLong()));
 }
 
 void BookmarksContentsWidget::openBookmark(const QModelIndex &index)
@@ -140,7 +146,7 @@ void BookmarksContentsWidget::openBookmark(const QModelIndex &index)
 
 void BookmarksContentsWidget::bookmarkProperties()
 {
-	BookmarksItem *bookmark = dynamic_cast<BookmarksItem*>(BookmarksManager::getModel()->itemFromIndex(m_ui->bookmarksViewWidget->currentIndex()));
+	BookmarksItem *bookmark = dynamic_cast<BookmarksItem*>(BookmarksManager::getModel()->getBookmark(m_ui->bookmarksViewWidget->currentIndex().data(BookmarksModel::IdentifierRole).toULongLong()));
 
 	if (bookmark)
 	{
@@ -169,7 +175,8 @@ void BookmarksContentsWidget::showContextMenu(const QPoint &point)
 	}
 	else
 	{
-		const bool isInTrash = BookmarksManager::getModel()->bookmarkFromIndex(index)->isInTrash();
+		BookmarksItem *bookmark = BookmarksManager::getModel()->getBookmark(index.data(BookmarksModel::IdentifierRole).toULongLong());
+		const bool isInTrash = (bookmark && bookmark->isInTrash());
 
 		menu.addAction(Utils::getIcon(QLatin1String("document-open")), tr("Open"), this, SLOT(openBookmark()));
 		menu.addAction(tr("Open in New Tab"), this, SLOT(openBookmark()))->setData(WindowsManager::NewTabOpen);
@@ -336,7 +343,7 @@ Action* BookmarksContentsWidget::getAction(int identifier)
 
 BookmarksItem* BookmarksContentsWidget::findFolder(const QModelIndex &index)
 {
-	BookmarksItem *item = BookmarksManager::getModel()->bookmarkFromIndex(index);
+	BookmarksItem *item = BookmarksManager::getModel()->getBookmark(index.data(BookmarksModel::IdentifierRole).toULongLong());
 
 	if (!item || item == BookmarksManager::getModel()->getRootItem() || item == BookmarksManager::getModel()->getTrashItem())
 	{

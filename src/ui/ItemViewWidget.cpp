@@ -103,8 +103,9 @@ void HeaderViewWidget::setSorting(int column, Qt::SortOrder order)
 int ItemViewWidget::m_treeIndentation = 0;
 
 ItemViewWidget::ItemViewWidget(QWidget *parent) : QTreeView(parent),
-	m_header(new HeaderViewWidget(Qt::Horizontal, this)),
 	m_model(NULL),
+	m_proxyModel(NULL),
+	m_headerWidget(new HeaderViewWidget(Qt::Horizontal, this)),
 	m_viewMode(ListViewMode),
 	m_sortOrder(Qt::AscendingOrder),
 	m_dragRow(-1),
@@ -117,7 +118,7 @@ ItemViewWidget::ItemViewWidget(QWidget *parent) : QTreeView(parent),
 	m_treeIndentation = indentation();
 
 	optionChanged(QLatin1String("Interface/ShowScrollBars"), SettingsManager::getValue(QLatin1String("Interface/ShowScrollBars")));
-	setHeader(m_header);
+	setHeader(m_headerWidget);
 	setIndentation(0);
 	setAllColumnsShowFocus(true);
 
@@ -126,10 +127,10 @@ ItemViewWidget::ItemViewWidget(QWidget *parent) : QTreeView(parent),
 	viewport()->setAcceptDrops(true);
 
 	connect(SettingsManager::getInstance(), SIGNAL(valueChanged(QString,QVariant)), this, SLOT(optionChanged(QString,QVariant)));
-	connect(this, SIGNAL(sortingChanged(int,Qt::SortOrder)), m_header, SLOT(setSorting(int,Qt::SortOrder)));
-	connect(m_header, SIGNAL(sortingChanged(int,Qt::SortOrder)), this, SLOT(setSorting(int,Qt::SortOrder)));
-	connect(m_header, SIGNAL(columnVisibilityChanged(int,bool)), this, SLOT(hideColumn(int,bool)));
-	connect(m_header, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
+	connect(this, SIGNAL(sortingChanged(int,Qt::SortOrder)), m_headerWidget, SLOT(setSorting(int,Qt::SortOrder)));
+	connect(m_headerWidget, SIGNAL(sortingChanged(int,Qt::SortOrder)), this, SLOT(setSorting(int,Qt::SortOrder)));
+	connect(m_headerWidget, SIGNAL(columnVisibilityChanged(int,bool)), this, SLOT(hideColumn(int,bool)));
+	connect(m_headerWidget, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
 }
 
 void ItemViewWidget::showEvent(QShowEvent *event)
@@ -166,22 +167,22 @@ void ItemViewWidget::showEvent(QShowEvent *event)
 			setColumnHidden(i, true);
 		}
 
-		disconnect(m_header, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
+		disconnect(m_headerWidget, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
 
 		for (int i = 0; i < columns.count(); ++i)
 		{
 			setColumnHidden(columns[i].toInt(), false);
 
-			if (m_header)
+			if (m_headerWidget)
 			{
-				m_header->moveSection(m_header->visualIndex(columns[i].toInt()), i);
+				m_headerWidget->moveSection(m_headerWidget->visualIndex(columns[i].toInt()), i);
 			}
 		}
 
-		connect(m_header, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
+		connect(m_headerWidget, SIGNAL(sectionMoved(int,int,int)), this, SLOT(saveState()));
 	}
 
-	m_header->setStretchLastSection(true);
+	m_headerWidget->setStretchLastSection(true);
 
 	m_isInitialized = true;
 
@@ -359,7 +360,7 @@ void ItemViewWidget::saveState()
 
 	for(int i = 0; i < getColumnCount(); ++i)
 	{
-		int section = m_header->logicalIndex(i);
+		int section = m_headerWidget->logicalIndex(i);
 
 		if (section >= 0 && !isColumnHidden(section))
 		{
@@ -387,8 +388,9 @@ void ItemViewWidget::notifySelectionChanged()
 
 		emit canMoveUpChanged(canMoveUp());
 		emit canMoveDownChanged(canMoveDown());
-		emit needsActionsUpdate();
 	}
+
+	emit needsActionsUpdate();
 }
 
 void ItemViewWidget::updateDropSelection()
@@ -467,10 +469,17 @@ void ItemViewWidget::setData(const QModelIndex &index, const QVariant &value, in
 
 void ItemViewWidget::setModel(QAbstractItemModel *model)
 {
-	QTreeView::setModel(model);
-
-	if (!model)
+	if (model)
 	{
+		m_proxyModel = new QSortFilterProxyModel(this);
+		m_proxyModel->setSourceModel(model);
+
+		QTreeView::setModel(m_proxyModel);
+	}
+	else
+	{
+		QTreeView::setModel(NULL);
+
 		return;
 	}
 
