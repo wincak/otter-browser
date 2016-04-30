@@ -389,7 +389,7 @@ void PreferencesSearchPageWidget::updateReaddSearchMenu()
 	{
 		SearchEnginesManager::SearchEngineDefinition searchEngine = availableSearchEngines.at(i);
 		QString searchEngineTitle = searchEngine.title.isEmpty() ? tr("(Untitled") : searchEngine.title;
-		QString searchEngineKeyword = searchEngine.keyword.isEmpty() ? QString() : (QString(" [" + searchEngine.keyword + "]"));
+		QString searchEngineKeyword = searchEngine.keyword.isEmpty() ? QString() : (QString(" [%1]").arg(searchEngine.keyword));
 
 		m_ui->addSearchButton->menu()->actions().at(1)->menu()->addAction(searchEngine.icon, (searchEngineTitle + searchEngineKeyword))->setData(searchEngine.identifier);
 	}
